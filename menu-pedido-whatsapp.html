@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Arepas y Algo Más · Haz tu pedido</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f6f4ef;--ink:#1c2321;--muted:#64706c;--card:#fff;--line:#ddd8cc;--accent:#0f6b6b;--on:#fff;--err:#b3261e}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#101615;--ink:#e8efed;--muted:#94a39f;--card:#182120;--line:#2a3735;--accent:#3fb5b0;--on:#06201f;--err:#ff8a80}}
+:root[data-theme="dark"]{--bg:#101615;--ink:#e8efed;--muted:#94a39f;--card:#182120;--line:#2a3735;--accent:#3fb5b0;--on:#06201f;--err:#ff8a80}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"DM Sans",system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.45}
+main{max-width:520px;margin:0 auto;padding:20px 16px 8px}
+h1{font-size:1.7rem;line-height:1.15;margin:0}
+.meta{color:var(--muted);margin:4px 0 18px;font-size:.95rem}
+h2{font-size:1.05rem;margin:22px 0 8px}
+.item{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:8px}
+.item .n{flex:1;font-weight:500}.item .n small{display:block;color:var(--muted);font-weight:400}
+.qty{display:flex;align-items:center;gap:8px}
+.qty button{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-size:1.2rem;cursor:pointer}
+.qty output{min-width:18px;text-align:center;font-weight:700}
+label{display:block;font-weight:500;margin:12px 0 4px}
+input[type=text],textarea{width:100%;font:inherit;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink)}
+.seg{display:flex;gap:8px}
+.seg label{flex:1;margin:0;font-weight:500}
+.seg input{position:absolute;opacity:0}
+.seg span{display:block;text-align:center;padding:11px 8px;border:1px solid var(--line);border-radius:10px;background:var(--card);cursor:pointer}
+.seg input:checked+span{background:var(--accent);color:var(--on);border-color:var(--accent)}
+.seg input:focus-visible+span,button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.bar{position:sticky;bottom:0;background:var(--bg);border-top:1px solid var(--line);padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px))}
+.bar>div{max-width:520px;margin:0 auto}
+.tot{display:flex;justify-content:space-between;font-weight:700;margin-bottom:8px}
+.go{width:100%;font:inherit;font-weight:700;font-size:1.05rem;background:var(--accent);color:var(--on);border:0;border-radius:12px;padding:14px;cursor:pointer}
+.go.alt{background:transparent;color:var(--accent);border:1px solid var(--accent);margin-top:8px;font-size:.95rem;padding:10px}
+.err{color:var(--err);min-height:1.3em;margin:0 0 6px;font-size:.92rem}
+</style>
+</head>
+<body>
+<main>
+  <h1 id="neg"></h1>
+  <p class="meta" id="info"></p>
+
+  <h2>1. Elige tu pedido</h2>
+  <div id="menu"></div>
+
+  <h2>2. Tus datos</h2>
+  <label for="nom">Tu nombre</label>
+  <input type="text" id="nom" autocomplete="name">
+  <label>¿Cómo lo quieres?</label>
+  <div class="seg">
+    <label><input type="radio" name="ent" value="Domicilio" checked><span>Domicilio</span></label>
+    <label><input type="radio" name="ent" value="Recoger en el local"><span>Recoger</span></label>
+  </div>
+  <div id="dirbox">
+    <label for="dir">Dirección y barrio</label>
+    <input type="text" id="dir" autocomplete="street-address">
+  </div>
+  <label>Forma de pago</label>
+  <div class="seg">
+    <label><input type="radio" name="pag" value="Efectivo" checked><span>Efectivo</span></label>
+    <label><input type="radio" name="pag" value="Transferencia"><span>Transferencia</span></label>
+  </div>
+  <label for="nota">Notas (opcional)</label>
+  <textarea id="nota" rows="2"></textarea>
+</main>
+
+<div class="bar"><div>
+  <div class="tot"><span>Total</span><span id="tot">$0</span></div>
+  <p class="err" id="err" role="alert"></p>
+  <a class="go" id="send" href="https://wa.me/" target="_blank" rel="noopener" style="display:block;text-align:center;text-decoration:none">Enviar pedido por WhatsApp</a>
+  <button class="go alt" id="copy" type="button">Copiar pedido</button>
+  <textarea id="prev" rows="5" readonly hidden style="margin-top:8px" aria-label="Resumen del pedido"></textarea>
+</div></div>
+
+<script>
+/* ====== EDITA AQUÍ PARA CADA NEGOCIO ====== */
+var NEGOCIO = "Arepas y Algo Más";
+var INFO = "Cali · Todos los días, 4:00 p. m. a 10:00 p. m.";
+var WHATSAPP = ""; /* número del negocio con 57 adelante, ej: 573001234567. Vacío = WhatsApp deja elegir el contacto */
+var DOMICILIO = 3000;
+var MENU = [
+  {n:"Arepa rellena", d:"Queso, carne desmechada y maíz tierno", p:9000},
+  {n:"Arepa con chorizo", d:"Chorizo y queso", p:7000},
+  {n:"Empanada", d:"De carne o de pollo", p:2500},
+  {n:"Jugo natural", d:"Mora, lulo o maracuyá", p:5000},
+  {n:"Agua", d:"Botella de 600 ml", p:2500}
+];
+/* ========================================= */
+
+var q={}, $=function(i){return document.getElementById(i)};
+function money(n){return "$"+n.toLocaleString("es-CO")}
+function val(name){return document.querySelector("input[name="+name+"]:checked").value}
+function sub(){return MENU.reduce(function(t,i){return t+(q[i.n]||0)*i.p},0)}
+function fee(){return val("ent")==="Domicilio"&&sub()?DOMICILIO:0}
+function paint(){$("tot").textContent=money(sub()+fee())}
+
+$("neg").textContent=NEGOCIO;$("info").textContent=INFO;document.title=NEGOCIO+" · Haz tu pedido";
+MENU.forEach(function(i){
+  var r=document.createElement("div");r.className="item";
+  r.innerHTML="<div class='n'><span></span><small></small></div><div class='qty'><button type='button' aria-label='Quitar'>−</button><output>0</output><button type='button' aria-label='Agregar'>+</button></div>";
+  r.querySelector("span").textContent=i.n+" · "+money(i.p);r.querySelector("small").textContent=i.d;
+  var o=r.querySelector("output"),b=r.querySelectorAll("button");
+  b[0].onclick=function(){if(q[i.n]>0){q[i.n]--;o.textContent=q[i.n];paint()}};
+  b[1].onclick=function(){q[i.n]=(q[i.n]||0)+1;o.textContent=q[i.n];paint()};
+  $("menu").appendChild(r)});
+document.querySelectorAll("input[name=ent]").forEach(function(r){r.onchange=function(){$("dirbox").hidden=val("ent")!=="Domicilio";paint()}});
+
+function build(){
+  var L=["*Pedido nuevo · "+NEGOCIO+"*",""];
+  MENU.forEach(function(i){if(q[i.n])L.push(q[i.n]+" × "+i.n+" — "+money(q[i.n]*i.p))});
+  L.push("","Subtotal: "+money(sub()));
+  if(fee())L.push("Domicilio: "+money(fee()));
+  L.push("*Total: "+money(sub()+fee())+"*","","Nombre: "+$("nom").value.trim(),"Entrega: "+val("ent"));
+  if(val("ent")==="Domicilio")L.push("Dirección: "+$("dir").value.trim());
+  L.push("Pago: "+val("pag"));
+  if($("nota").value.trim())L.push("Notas: "+$("nota").value.trim());
+  return L.join("\n");
+}
+function check(){
+  var m="";
+  if(!sub())m="Elige al menos un producto.";
+  else if(!$("nom").value.trim())m="Escribe tu nombre.";
+  else if(val("ent")==="Domicilio"&&!$("dir").value.trim())m="Escribe tu dirección para el domicilio.";
+  $("err").textContent=m;return !m;
+}
+function showPrev(){var p=$("prev");p.hidden=false;p.value=build();return p}
+$("send").addEventListener("click",function(ev){
+  if(!check()){ev.preventDefault();return}
+  this.href="https://wa.me/"+WHATSAPP+"?text="+encodeURIComponent(build());
+  showPrev();
+  $("err").textContent="Si WhatsApp no se abrió, toca “Copiar pedido” y pégalo en el chat.";
+});
+$("copy").onclick=function(){
+  if(!check())return;
+  var p=showPrev(),msg="Mantén presionado el texto de abajo, elige Copiar y pégalo en WhatsApp.";
+  p.focus();p.select();p.setSelectionRange(0,99999);
+  var ok=false;try{ok=document.execCommand("copy")}catch(e){}
+  if(ok){$("err").textContent="Pedido copiado. Pégalo en WhatsApp.";return}
+  if(navigator.clipboard){navigator.clipboard.writeText(p.value).then(function(){$("err").textContent="Pedido copiado. Pégalo en WhatsApp."},function(){$("err").textContent=msg});return}
+  $("err").textContent=msg;
+};
+paint();
+</script>
+</body>
+</html>
